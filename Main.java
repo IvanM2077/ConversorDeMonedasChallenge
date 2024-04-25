@@ -1,6 +1,14 @@
 import java.util.Scanner;
+import org.json.JSONObject;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 public class Main {
+    private static final String API_KEY = "tu_clave_de_api_aqui";
+    private static final String API_BASE_URL = "https://v6.exchangeratesapi.io/latest?base=";
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
@@ -20,17 +28,16 @@ public class Main {
             System.out.println("8) Convertir de Peso Argentino a Peso");
             System.out.println("9) Convertir de Peso a Real");
             System.out.println("10) Convertir de Real a Peso");
-            System.out.println(":");
-
+            System.out.print(": ");
 
             int opcion = scanner.nextInt();
-            System.out.println("Ingrese la cantidad: ");
+            System.out.print("Ingrese la cantidad: ");
             float cantidad = scanner.nextFloat();
 
             Main app = new Main();
-            float resultado = app.ConverterDivisa(cantidad, opcion);
-            String DivsaName = app.GetNameDivisa(opcion);
-            System.out.println("El resultado de la conversión es: " + resultado +" ["+DivsaName+"]");
+            float resultado = app.converterDivisa(cantidad, opcion);
+            String divisaName = app.getNameDivisa(opcion);
+            System.out.println("El resultado de la conversión es: " + resultado + " [" + divisaName + "]");
 
             System.out.println("===========================================");
             System.out.println("¿Desea realizar otra conversión? (1: Sí, 0: No)");
@@ -40,98 +47,145 @@ public class Main {
         System.out.println("¡Gracias por usar el conversor de monedas!");
     }
 
-    public float ConverterDivisa(float cantidad, int opcion) {
-        float resultado = 0.0f;
+    public float converterDivisa(float cantidad, int opcion) {
+        float tasaCambio = getTasaCambio(opcion);
+        return cantidad * tasaCambio;
+    }
+
+    public float getTasaCambio(int opcion) {
+        String baseCurrency = "";
         switch (opcion) {
             case 1:
-                resultado = cantidad / GetDivisa(1);
+                baseCurrency = "MXN";
                 break;
             case 2:
-                resultado = cantidad * GetDivisa(1);
+                baseCurrency = "USD";
                 break;
             case 3:
-                resultado = cantidad / GetDivisa(2);
+                baseCurrency = "MXN";
                 break;
             case 4:
-                resultado = cantidad * GetDivisa(2);
+                baseCurrency = "EUR";
                 break;
             case 5:
-                resultado = cantidad / GetDivisa(3);
+                baseCurrency = "MXN";
                 break;
             case 6:
-                resultado = cantidad * GetDivisa(3);
+                baseCurrency = "GBP";
                 break;
             case 7:
-                resultado = cantidad / GetDivisa(4);
+                baseCurrency = "MXN";
                 break;
             case 8:
-                resultado = cantidad * GetDivisa(4);
+                baseCurrency = "ARS";
                 break;
             case 9:
-                resultado = cantidad / GetDivisa(5);
+                baseCurrency = "MXN";
                 break;
             case 10:
-                resultado = cantidad * GetDivisa(5);
+                baseCurrency = "BRL";
                 break;
             default:
                 System.out.println("Opción no válida.");
+                return 0.0f;
         }
-        return resultado;
-    }
 
-    public float GetDivisa(int divisaFind) {
-        float divisaBack = 0f;
-        float[] arrayDivisas = {17.23f, 18.45f, 21.50f, 0.02f, 3.33f};
-        int[] numeros = {1, 2, 3, 4, 5};
+        try {
+            URL url = new URL(API_BASE_URL + baseCurrency);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setRequestProperty("Authorization", "Bearer " + API_KEY);
 
-        for (int i = 0; i < numeros.length; i++) {
-            if (divisaFind == numeros[i]) {
-                divisaBack = arrayDivisas[i];
-                break;
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String inputLine;
+            StringBuilder response = new StringBuilder();
+
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
             }
+            in.close();
+
+            JSONObject jsonResponse = new JSONObject(response.toString());
+            JSONObject rates = jsonResponse.getJSONObject("rates");
+
+            float tasaCambio = 1.0f; // Por defecto, la tasa de cambio es 1.0 si la moneda base y la objetivo son iguales
+            switch (opcion) {
+                case 1:
+                    tasaCambio = rates.getFloat("USD");
+                    break;
+                case 2:
+                    tasaCambio = 1 / rates.getFloat("USD");
+                    break;
+                case 3:
+                    tasaCambio = rates.getFloat("EUR");
+                    break;
+                case 4:
+                    tasaCambio = 1 / rates.getFloat("EUR");
+                    break;
+                case 5:
+                    tasaCambio = rates.getFloat("GBP");
+                    break;
+                case 6:
+                    tasaCambio = 1 / rates.getFloat("GBP");
+                    break;
+                case 7:
+                    tasaCambio = rates.getFloat("ARS");
+                    break;
+                case 8:
+                    tasaCambio = 1 / rates.getFloat("ARS");
+                    break;
+                case 9:
+                    tasaCambio = rates.getFloat("BRL");
+                    break;
+                case 10:
+                    tasaCambio = 1 / rates.getFloat("BRL");
+                    break;
+            }
+            return tasaCambio;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0.0f;
         }
-        return divisaBack;
     }
 
-    public String GetNameDivisa(int divisaFind) {
-        int[] numeros = {1, 2, 3, 4, 5};
-        String Name;
-        switch (divisaFind){
+    public String getNameDivisa(int divisaFind) {
+        String name;
+        switch (divisaFind) {
             case 1:
-                Name ="USD";
+                name = "USD";
                 break;
             case 2:
-                Name ="MXN";
+                name = "MXN";
                 break;
             case 3:
-                Name ="€";
+                name = "EUR";
                 break;
             case 4:
-                Name ="MXN";
+                name = "MXN";
                 break;
             case 5:
-                Name ="£";
+                name = "GBP";
                 break;
             case 6:
-                Name ="MXN";
+                name = "MXN";
                 break;
             case 7:
-                Name ="ARS";
+                name = "ARS";
                 break;
             case 8:
-                Name ="MXN";
+                name = "MXN";
                 break;
             case 9:
-                Name ="R$";
+                name = "BRL";
                 break;
             case 10:
-                Name ="MXN";
+                name = "MXN";
                 break;
             default:
-                System.out.println("Opcion no valida");
-                Name="";
-
+                System.out.println("Opción no válida");
+                name = "";
         }
-        return Name;
+        return name;
     }
 }
