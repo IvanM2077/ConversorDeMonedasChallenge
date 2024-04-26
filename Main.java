@@ -6,14 +6,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class Main {
-    private static final String API_KEY = "tu_clave_de_api_aqui";
-    private static final String API_BASE_URL = "https://v6.exchangeratesapi.io/latest?base=";
+    private static final String API_KEY = "APIKEY";
+    private static final String API_BASE_URL = "https://v6.exchangerate-api.com/v6/" + API_KEY + "/latest/";
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("===========================================");
-        System.out.println("Bienvenido al conversor de monedas!");
+        System.out.println("¡Bienvenido al conversor de monedas!");
         byte flag = 1;
 
         do {
@@ -45,6 +45,7 @@ public class Main {
         } while (flag == 1);
 
         System.out.println("¡Gracias por usar el conversor de monedas!");
+        scanner.close();
     }
 
     public float converterDivisa(float cantidad, int opcion) {
@@ -54,36 +55,49 @@ public class Main {
 
     public float getTasaCambio(int opcion) {
         String baseCurrency = "";
+        String targetCurrency = "";
+
+        // Definir monedas base y objetivo según la opción seleccionada
         switch (opcion) {
             case 1:
                 baseCurrency = "MXN";
+                targetCurrency = "USD";
                 break;
             case 2:
                 baseCurrency = "USD";
+                targetCurrency = "MXN";
                 break;
             case 3:
                 baseCurrency = "MXN";
+                targetCurrency = "EUR";
                 break;
             case 4:
                 baseCurrency = "EUR";
+                targetCurrency = "MXN";
                 break;
             case 5:
                 baseCurrency = "MXN";
+                targetCurrency = "GBP";
                 break;
             case 6:
                 baseCurrency = "GBP";
+                targetCurrency = "MXN";
                 break;
             case 7:
                 baseCurrency = "MXN";
+                targetCurrency = "ARS";
                 break;
             case 8:
                 baseCurrency = "ARS";
+                targetCurrency = "MXN";
                 break;
             case 9:
                 baseCurrency = "MXN";
+                targetCurrency = "BRL";
                 break;
             case 10:
                 baseCurrency = "BRL";
+                targetCurrency = "MXN";
                 break;
             default:
                 System.out.println("Opción no válida.");
@@ -91,57 +105,30 @@ public class Main {
         }
 
         try {
-            URL url = new URL(API_BASE_URL + baseCurrency);
+            // Crear la URL de la solicitud
+            String urlStr = API_BASE_URL + baseCurrency;
+
+            // Conexión HTTP
+            URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
-            conn.setRequestProperty("Authorization", "Bearer " + API_KEY);
 
+            // Leer la respuesta
             BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String inputLine;
             StringBuilder response = new StringBuilder();
+            String inputLine;
 
             while ((inputLine = in.readLine()) != null) {
                 response.append(inputLine);
             }
             in.close();
 
+            // Procesar la respuesta JSON
             JSONObject jsonResponse = new JSONObject(response.toString());
-            JSONObject rates = jsonResponse.getJSONObject("rates");
+            JSONObject conversionRates = jsonResponse.getJSONObject("conversion_rates");
 
-            float tasaCambio = 1.0f; // Por defecto, la tasa de cambio es 1.0 si la moneda base y la objetivo son iguales
-            switch (opcion) {
-                case 1:
-                    tasaCambio = rates.getFloat("USD");
-                    break;
-                case 2:
-                    tasaCambio = 1 / rates.getFloat("USD");
-                    break;
-                case 3:
-                    tasaCambio = rates.getFloat("EUR");
-                    break;
-                case 4:
-                    tasaCambio = 1 / rates.getFloat("EUR");
-                    break;
-                case 5:
-                    tasaCambio = rates.getFloat("GBP");
-                    break;
-                case 6:
-                    tasaCambio = 1 / rates.getFloat("GBP");
-                    break;
-                case 7:
-                    tasaCambio = rates.getFloat("ARS");
-                    break;
-                case 8:
-                    tasaCambio = 1 / rates.getFloat("ARS");
-                    break;
-                case 9:
-                    tasaCambio = rates.getFloat("BRL");
-                    break;
-                case 10:
-                    tasaCambio = 1 / rates.getFloat("BRL");
-                    break;
-            }
+            // Obtener la tasa de cambio
+            float tasaCambio = conversionRates.getFloat(targetCurrency);
             return tasaCambio;
         } catch (Exception e) {
             e.printStackTrace();
